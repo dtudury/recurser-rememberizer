@@ -1,2 +1,2 @@
 # recurser-rememberizer
-learning and remembering with spaced repetition
+learning and remembering recursers with spaced repetition

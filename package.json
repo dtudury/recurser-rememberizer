@@ -1,0 +1,22 @@
+{
+  "name": "recurser-rememberizer",
+  "version": "0.0.0",
+  "description": "learning and remembering recursers with spaced repetition",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dtudury/recurser-rememberizer.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/dtudury/recurser-rememberizer/issues"
+  },
+  "homepage": "https://github.com/dtudury/recurser-rememberizer#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "hackerschool-api": "^0.1.1"
+  }
+}
