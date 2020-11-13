@@ -1,7 +1,6 @@
 import { proxy, render, h, mapEntries } from './horseless.0.5.1.min.esm.js'
 
 const model = proxy({
-    people: {},
     batches: {}
 })
 
@@ -22,10 +21,12 @@ async function hitRememberizerApi(path) {
 async function getMe() {
     model.me = await hitRememberizerApi('/me')
 }
+/*
 async function getPerson(id) {
     const person = await hitRememberizerApi(`/person/${id}`)
     people[id] = person
 }
+*/
 async function getList() {
     const list = await hitRememberizerApi('/list')
     list.forEach(batch => {
@@ -40,8 +41,7 @@ async function getPeople(id) {
     model.batches[id].people = []
     people.forEach(person => {
         if (person.id !== model.me.id) {
-            model.batches[id].people.push(person.id)
-            model.people[person.id] = person
+            model.batches[id].people.push(person)
         }
     })
 }
@@ -73,6 +73,20 @@ function getSortedBatches() {
     return sortedBatches
 }
 
+function getKnownPeople() {
+    const people = []
+    getSortedBatches().forEach(batch => {
+        if (batch.people) {
+            batch.people.forEach(person => {
+                if (people.indexOf(person) === -1) {
+                    people.push(person)
+                }
+            })
+        }
+    })
+    return people
+}
+
 async function init() {
     await Promise.all([getList(), getMe()])
     await getPeople(model.me.batch.id)
@@ -91,6 +105,14 @@ const loadPeople = id => el => async e => {
 init()
 render(document.body, h`
     <span onclick=${clickMe}>init again</span>
+    ${mapEntries(getKnownPeople, person => h`
+        <div>
+            <img src="${person.image}">
+            ${person.first_name}
+            ${person.middle_name}
+            ${person.last_name}
+        </div>
+    `)}
     ${mapEntries(getSortedBatches, batch => h`
         <div onclick=${loadPeople(batch.id)}>
             ${batch.name}
