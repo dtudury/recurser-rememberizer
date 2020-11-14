@@ -19,7 +19,7 @@ export function saveActiveBatches () {
   })
 }
 
-export async function updatePeople () {
+export async function updateProgress () {
   const batchIds = Object.values(model.batches)
     .filter(batch => batch.people)
     .map(batch => batch.id)
@@ -40,4 +40,4 @@ export async function updatePeople () {
   })
 }
 
-watchFunction(updatePeople)
+watchFunction(updateProgress)

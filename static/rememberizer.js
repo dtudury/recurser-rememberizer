@@ -1,6 +1,6 @@
 import { render, h, mapEntries } from './horseless.0.5.1.min.esm.js'
 import { model } from './model.js'
-import { init, loadPeople, startProgress } from './db.js'
+import { init, setProgress, toggleBatch } from './db.js'
 
 function calculateOverlap (batch) {
   if (!model.me || !model.me.batch) return 0
@@ -30,31 +30,35 @@ function getSortedBatches () {
   const sortedBatches = Object.values(model.batches).sort((a, b) => calculateOverlap(b) - calculateOverlap(a))
   return sortedBatches
 }
+const RATIO = (1 + Math.sqrt(5)) / 2
+function calculateDueness (person) {
+  if (model.progress[person.id]) {
+    const streak = model.progress[person.id].streak
+    const d = Math.max((streak[streak.length - 1] - streak[0]) * RATIO, 10 * 1000)
+    return (Date.now() - streak[0]) / d - 1
+  }
+  return 0
+}
 
 function getAvailablePeople () {
-  const people = []
+  let people = []
   getSortedBatches().forEach(batch => {
     if (batch.people) {
       Object.values(batch.people).forEach(person => {
-        if (people.indexOf(person) === -1 && !model.progress[person.id]) {
+        if (people.indexOf(person) === -1) {
           people.push(person)
         }
       })
     }
   })
+  people = people.sort((a, b) => calculateDueness(b) - calculateDueness(a))
+  people.forEach(person => console.log(calculateDueness(person), person))
   return people
 }
 
-const toggleBatch = batch => el => async e => {
-  loadPeople(batch)
-}
-
-const clickPerson = person => el => async e => {
-  startProgress(person)
-}
-
-const selectPerson = person => el => e => {
-  model.selected = { person, revealed: false }
+const clickBatch = batch => el => async e => {
+  e.preventDefault()
+  toggleBatch(batch)
 }
 
 const calculateStyle = batch => el => {
@@ -63,13 +67,28 @@ const calculateStyle = batch => el => {
   return ''
 }
 
-const calculateOverlapText = batch => el => {
-  const overlap = Math.round(calculateOverlap(batch) / (7 * 24 * 60 * 60 * 1000) + 3 / 7) // 3/7: 2/7 for the 2 weekend days and 1/7 for the first day
-  if (overlap > 0) return `(${overlap} week overlap)`
-  return '' // `${-overlap} week gap`
+const checkbox = batch => el => {
+  if (batch.isLoading) return h`<input type="checkbox" indeterminate>`
+  if (batch.people) return h`<input type="checkbox" checked>`
+  return h`<input type="checkbox">`
 }
 
-function showSelected (el) {
+function next () {
+  const availablePeople = getAvailablePeople()
+  model.selected = { person: availablePeople[0], revealed: false }
+}
+
+const right = el => e => {
+  setProgress(model.selected.person)
+  next()
+}
+
+const wrong = el => e => {
+  setProgress(model.selected.person, true)
+  next()
+}
+
+function selectedCard (el) {
   const flip = el => e => {
     if (model.selected.revealed) {
       model.selected.revealed = false
@@ -78,54 +97,80 @@ function showSelected (el) {
     }
   }
   if (model.selected == null) return 'begin'
+  console.log(model.progress[model.selected.person.id])
   return h`
-    <img onclick=${flip} src="${model.selected.person.image}">
     ${el => {
       if (model.selected.revealed) {
         return h`
-          ${model.selected.person.first_name}
-          ${model.selected.person.middle_name}
-          ${model.selected.person.last_name}
+          <div>
+            <img onclick=${flip} src="${model.selected.person.image}">
+            <button onclick=${right} >right</button>
+            <button onclick=${wrong} >wrong</button>
+          </div>
+          <div>
+            ${model.selected.person.first_name}
+            ${model.selected.person.middle_name}
+            ${model.selected.person.last_name}
+          </div>
+          <div>
+            ${model.selected.person.current_location?.name}
+          </div>
+          <div>
+            ${model.selected.person.batch.name}
+          </div>
+          <div>
+            <h3>Interests</h3>
+            ${model.selected.person.interests}
+          </div>
+          <div>
+            <h3>Before RC</h3>
+            ${model.selected.person.before_rc}
+          </div>
+          <div>
+            <h3>During RC</h3>
+            ${model.selected.person.during_rc}
+          </div>
+          <div>
+            <h3>Pseudonym</h3>
+            ${model.selected.person.pseudonym}
+          </div>
+        `
+      } else {
+        return h`
+          <div>
+            <img onclick=${flip} src="${model.selected.person.image}">
+          </div>
         `
       }
     }}
   `
 }
 
-const cards = mapEntries(() => model.progress, item => {
-  const person = model.batches[item.batchId].people[item.id]
+const selectPerson = person => el => e => { model.selected = { person, revealed: false } }
+const cards = mapEntries(getAvailablePeople, person => {
   return h`<img onclick=${selectPerson(person)} src="${() => person.image}" width="50" height="50">`
 })
 
 init()
 render(document.body, h`
-  <div style="height: 50vh; display: flex; flex-flow: column;">
-    <div style="height: 50px; overflow-x: scroll; overflow-y: hidden; white-space: nowrap;">
-      ${cards}
-    </div>
-    <div style="flex: 1;">
-      ${showSelected}
-    </div>
-  </div>
-  <div style="height: 50vh; display: flex;">
-    <div style="flex: 1; overflow: scroll;">
-      ${mapEntries(getAvailablePeople, person => h`
-        <div onclick="${clickPerson(person)}">
-          <img src="${() => person.image}" width="50" height="50">
-          ${() => person.first_name}
-          ${() => person.middle_name}
-          ${() => person.last_name}
-        </div>
-      `)}
-    </div>
-    <div style="flex: 1; overflow: scroll;">
+  <div style="display: flex; height: 100vh; width: 100vw;">
+    <div style="flex: 0 0 20em; overflow-y: scroll;">
       ${mapEntries(getSortedBatches, batch => h`
-        <div onclick=${toggleBatch(batch)} style="${calculateStyle(batch)}">
-          <input type="checkbox" indeterminate>
+        <label onclick=${clickBatch(batch)} style="display: block; ${calculateStyle(batch)}">
+          ${checkbox(batch)}
           ${() => batch.name}
-          ${calculateOverlapText(batch)}
-        </div>
+        </label>
       `)}
+    </div>
+    <div style="flex: 1; display: flex; flex-flow: column;">
+      <div style="flex: 1; display: flex; flex-flow: column; padding: 1em;">
+        ${selectedCard}
+      </div>
+      <div style="height: 50px; position:relative; overflow: hidden;">
+        <div style="width: 100%; position: absolute; overflow-x: scroll; white-space: nowrap;">
+          ${cards}
+        </div>
+      </div>
     </div>
   </div>
 `)

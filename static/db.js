@@ -1,4 +1,4 @@
-import { model, saveActiveBatches, updatePeople } from './model.js'
+import { model, saveActiveBatches, updateProgress } from './model.js'
 import { getMe, getList, getPeople } from './apiActions.js'
 
 export const db = new Promise((resolve, reject) => {
@@ -18,23 +18,29 @@ export const db = new Promise((resolve, reject) => {
   })
 })
 
-export async function startProgress (person) {
-  const personProgress = {
+export async function setProgress (person, reset) {
+  const personProgress = JSON.parse(JSON.stringify(model.progress[person.id] || {
     streak: [],
     id: person.id,
     batchId: person.batch.id
+  }))
+  if (reset) {
+    personProgress.streak = [Date.now()]
+  } else {
+    personProgress.streak.push(Date.now())
   }
+  model.progress[person.id] = personProgress
   Object.assign((await db).transaction(['progress'], 'readwrite').objectStore('progress').put(personProgress), {
     onsuccess: event => {
       console.log('adding person')
       model.progress[personProgress.id] = personProgress
       console.log('stored progress', event.target.result)
-      updatePeople()
+      updateProgress()
     }
   })
 }
 
-export async function loadPeople (batch) {
+export async function toggleBatch (batch) {
   if (model.batches[batch.id].isLoading) return
   if (model.batches[batch.id].people) delete model.batches[batch.id].people
   else getPeople(batch.id)
