@@ -1,4 +1,4 @@
-import { render, h, mapEntries } from './horseless.0.5.1.min.esm.js'
+import { render, h, mapEntries, showIfElse } from './horseless.0.5.1.min.esm.js'
 import { model } from './model.js'
 import { init, setProgress, toggleBatch } from './db.js'
 
@@ -78,12 +78,17 @@ function next () {
 }
 
 const right = el => e => {
-  setProgress(model.selected.person)
+  setProgress(model.selected.person, false)
   next()
 }
 
 const wrong = el => e => {
   setProgress(model.selected.person, true)
+  next()
+}
+
+const snooze = duration => el => e => {
+  setProgress(model.selected.person, false, duration / RATIO)
   next()
 }
 
@@ -101,9 +106,9 @@ function selectedCard (el) {
       if (model.selected.revealed) {
         return h`
           <div>
-            <img onclick=${flip} src="${model.selected.person.image}">
-            <button onclick=${right} >right</button>
-            <button onclick=${wrong} >wrong</button>
+            <img src="${model.selected.person.image}">
+            <button onclick=${right}>right</button>
+            <button onclick=${wrong}>wrong</button>
           </div>
           <div>
             ${model.selected.person.first_name}
@@ -132,12 +137,34 @@ function selectedCard (el) {
             <h3>Pseudonym</h3>
             ${model.selected.person.pseudonym}
           </div>
+          <div>
+            <h3>Snooze</h3>
+            <button onclick=${snooze(60 * 60 * 1000)}>1 hour</button>
+            <button onclick=${snooze(24 * 60 * 60 * 1000)}>1 day</button>
+            <button onclick=${snooze(7 * 24 * 60 * 60 * 1000)}>1 week</button>
+          </div>
+          <div>
+            dueness: ${calculateDueness(model.selected.person)}
+          </div>
         `
       } else {
         return h`
           <div>
             <img onclick=${flip} src="${model.selected.person.image}">
+            <button onclick=${flip}>flip</button>
           </div>
+          ${showIfElse(() => !model.progress[model.selected.person.id], h`
+            <div>
+              New person!
+            </div>
+          `)}
+          ${showIfElse(() => calculateDueness(model.selected.person) < 0, h`
+            <div>
+              You know everyone!
+              <br>
+              (take a break?)
+            </div>
+          `)}
         `
       }
     }}

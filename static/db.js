@@ -18,16 +18,23 @@ export const db = new Promise((resolve, reject) => {
   })
 })
 
-export async function setProgress (person, reset) {
+export async function setProgress (person, reset, snooze) {
+  const now = Date.now()
   const personProgress = JSON.parse(JSON.stringify(model.progress[person.id] || {
     streak: [],
     id: person.id,
     batchId: person.batch.id
   }))
   if (reset) {
-    personProgress.streak = [Date.now()]
+    personProgress.streak = [now]
   } else {
-    personProgress.streak.push(Date.now())
+    personProgress.streak.push(now)
+  }
+  if (snooze) {
+    const t0 = personProgress.streak[0]
+    if (now - t0 < snooze) {
+      personProgress.streak.unshift(now - snooze)
+    }
   }
   model.progress[person.id] = personProgress
   Object.assign((await db).transaction(['progress'], 'readwrite').objectStore('progress').put(personProgress), {
