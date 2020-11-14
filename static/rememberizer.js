@@ -52,7 +52,6 @@ function getAvailablePeople () {
     }
   })
   people = people.sort((a, b) => calculateDueness(b) - calculateDueness(a))
-  people.forEach(person => console.log(calculateDueness(person), person))
   return people
 }
 
@@ -96,8 +95,7 @@ function selectedCard (el) {
       model.selected.revealed = true
     }
   }
-  if (model.selected == null) return 'begin'
-  console.log(model.progress[model.selected.person.id])
+  if (model.selected == null) return h`<button onclick=${el => next}>begin</button>`
   return h`
     ${el => {
       if (model.selected.revealed) {

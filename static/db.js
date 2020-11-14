@@ -32,9 +32,7 @@ export async function setProgress (person, reset) {
   model.progress[person.id] = personProgress
   Object.assign((await db).transaction(['progress'], 'readwrite').objectStore('progress').put(personProgress), {
     onsuccess: event => {
-      console.log('adding person')
       model.progress[personProgress.id] = personProgress
-      console.log('stored progress', event.target.result)
       updateProgress()
     }
   })
@@ -54,7 +52,6 @@ export async function init () {
       await Promise.all(batches.map(batch => {
         return getPeople(batch)
       }))
-      console.log('batches', event.target.result)
       saveActiveBatches()
     },
     onfailure: event => {

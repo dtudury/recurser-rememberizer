@@ -13,7 +13,6 @@ export function saveActiveBatches () {
       .map(batch => batch.id)
     Object.assign((await db).transaction(['batches'], 'readwrite').objectStore('batches').put(batchIds, 'active'), {
       onsuccess: event => {
-        console.log('saved active batches', event.target.result)
       }
     })
   })
