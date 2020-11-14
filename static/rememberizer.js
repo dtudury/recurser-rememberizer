@@ -61,9 +61,9 @@ const clickBatch = batch => el => async e => {
 }
 
 const calculateStyle = batch => el => {
-  if (batch.isLoading) return 'color: lightgreen;'
-  if (batch.people) return 'color: green;'
-  return ''
+  if (batch.isLoading) return 'color: lightgray;'
+  if (batch.people) return 'color: black;'
+  return 'color: dimgray;'
 }
 
 const checkbox = batch => el => {
@@ -105,10 +105,10 @@ function selectedCard (el) {
     ${el => {
       if (model.selected.revealed) {
         return h`
-          <div>
+          <div style="display: flex; align-items: flex-end; margin-bottom: 1em;">
             <img src="${model.selected.person.image}">
-            <button onclick=${right}>right</button>
-            <button onclick=${wrong}>wrong</button>
+            <button style="width: 100px; margin-left: 1em;" onclick=${right}>right</button>
+            <button style="width: 100px; margin-left: 1em;" onclick=${wrong}>wrong</button>
           </div>
           <div>
             ${model.selected.person.first_name}
@@ -143,15 +143,15 @@ function selectedCard (el) {
             <button onclick=${snooze(24 * 60 * 60 * 1000)}>1 day</button>
             <button onclick=${snooze(7 * 24 * 60 * 60 * 1000)}>1 week</button>
           </div>
-          <div>
+          <div style="margin-top: 1em; font-style: italic; color: gainsboro;">
             dueness: ${calculateDueness(model.selected.person)}
           </div>
         `
       } else {
         return h`
-          <div>
+          <div style="display: flex; align-items: flex-end; margin-bottom: 1em;">
             <img onclick=${flip} src="${model.selected.person.image}">
-            <button onclick=${flip}>flip</button>
+            <button style="width: 100px; margin-left: 1em;" onclick=${flip}>flip</button>
           </div>
           ${showIfElse(() => !model.progress[model.selected.person.id], h`
             <div>
@@ -179,7 +179,7 @@ const cards = mapEntries(getAvailablePeople, person => {
 init()
 render(document.body, h`
   <div style="display: flex; height: 100vh; width: 100vw;">
-    <div style="flex: 0 0 20em; overflow-y: scroll;">
+    <div style="flex: 0 0 12em; overflow-y: scroll; background: whitesmoke;">
       ${mapEntries(getSortedBatches, batch => h`
         <label onclick=${clickBatch(batch)} style="display: block; ${calculateStyle(batch)}">
           ${checkbox(batch)}
@@ -188,13 +188,13 @@ render(document.body, h`
       `)}
     </div>
     <div style="flex: 1; display: flex; flex-flow: column;">
-      <div style="flex: 1; display: flex; flex-flow: column; padding: 1em;">
-        ${selectedCard}
-      </div>
       <div style="height: 50px; position:relative; overflow: hidden;">
         <div style="width: 100%; position: absolute; overflow-x: scroll; white-space: nowrap;">
           ${cards}
         </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-flow: column; padding: 3em 2em; overflow-y: scroll; border-top: 1px solid gray;">
+        ${selectedCard}
       </div>
     </div>
   </div>
