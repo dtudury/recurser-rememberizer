@@ -1,10 +1,10 @@
 const hackerschool = require('hackerschool-api')
 const express = require('express')
 const dotenv = require('dotenv')
+dotenv.config()
 
 const STATIC_DIR = `${__dirname}/static`
-
-dotenv.config()
+const PORT = process.env.PORT || 80
 
 const auth = hackerschool.auth({
     client_id: process.env.CLIENT_ID,
@@ -75,4 +75,5 @@ app.get('/oauthCallback', async (req, res) => {
     }
 });
 
-app.listen(process.env.PORT || 80)
+app.listen(PORT)
+console.log('app listening on port', PORT)
