@@ -1,7 +1,6 @@
-import { render, h, mapEntries } from './horseless.0.5.1.min.esm.js'
-import { model, saveActiveBatches } from './model.js'
-import { getMe, getList, getPeople } from './apiActions.js'
-import { db } from './db.js'
+import { render, h, mapEntries, showIfElse } from './horseless.0.5.1.min.esm.js'
+import { model } from './model.js'
+import { init, loadPeople, startProgress } from './db.js'
 
 function calculateOverlap(batch) {
     if (!model.me || !model.me.batch) return 0
@@ -32,12 +31,12 @@ function getSortedBatches() {
     return sortedBatches
 }
 
-function getKnownPeople() {
+function getAvailablePeople() {
     const people = []
     getSortedBatches().forEach(batch => {
         if (batch.people) {
-            batch.people.forEach(person => {
-                if (people.indexOf(person) === -1) {
+            Object.values(batch.people).forEach(person => {
+                if (people.indexOf(person) === -1 && !model.progress[person.id]) {
                     people.push(person)
                 }
             })
@@ -46,43 +45,16 @@ function getKnownPeople() {
     return people
 }
 
-async function init() {
-    await Promise.all([getList(), getMe()])
-    Object.assign((await db).transaction(['batches']).objectStore('batches').get('active'), {
-        onsuccess: async event => {
-            const batches = event.target.result
-            if (!batches.length) {
-                batches.push(model.me.batch.id)
-            }
-            await Promise.all(batches.map(batch => {
-                return getPeople(batch)
-            }))
-            console.log('batches', event.target.result)
-            saveActiveBatches()
-        },
-        onfailure: event => {
-            console.log('failure', event)
-        }
-    })
-}
-
 const toggleBatch = batch => el => async e => {
-    if (model.batches[batch.id].isLoading) return
-    if (model.batches[batch.id].people) delete model.batches[batch.id].people
-    else getPeople(batch.id)
+    loadPeople(batch)
 }
 
-const addPerson = person => el => async e => {
-    const personProgress = {
-        streak: [],
-        id: person.id,
-        batchId: person.batch.id
-    }
-    Object.assign((await db).transaction(['progress'], 'readwrite').objectStore('progress').put(personProgress), {
-        onsuccess: event => {
-            console.log('stored progress', event.target.result)
-        }
-    })
+const clickPerson = person => el => async e => {
+    startProgress(person)
+}
+
+const selectPerson = person => el => e => {
+    model.selected = { person, revealed: false }
 }
 
 const calculateStyle = batch => el => {
@@ -92,20 +64,53 @@ const calculateStyle = batch => el => {
 }
 
 const calculateOverlapText = batch => el => {
-    let overlap = Math.round(calculateOverlap(batch) / (7 * 24 * 60 * 60 * 1000) + 3 / 7) // 3/7: 2/7 for the 2 weekend days and 1/7 for the first day
+    const overlap = Math.round(calculateOverlap(batch) / (7 * 24 * 60 * 60 * 1000) + 3 / 7) // 3/7: 2/7 for the 2 weekend days and 1/7 for the first day
     if (overlap > 0) return `(${overlap} week overlap)`
     return '' // `${-overlap} week gap`
 }
 
+function showSelected(el) {
+    const flip = el => e => {
+        if (model.selected.revealed) {
+            model.selected.revealed = false
+        } else {
+            model.selected.revealed = true
+        }
+    }
+    if (model.selected == null) return 'begin'
+    return h`
+        <img onclick=${flip} src="${model.selected.person.image}">
+        ${el => {
+            if (model.selected.revealed) {
+                return h`
+                    ${model.selected.person.first_name}
+                    ${model.selected.person.middle_name}
+                    ${model.selected.person.last_name}
+                `
+            }
+        }}
+    `
+}
+
+const cards = mapEntries(() => model.progress, item => {
+    const person = model.batches[item.batchId].people[item.id]
+    return h`<img onclick=${selectPerson(person)} src="${() => person.image}" width="50" height="50">`
+})
+
 init()
 render(document.body, h`
-    <div style="height: 50vh;">
-    here
+    <div style="height: 50vh; display: flex; flex-flow: column;">
+        <div style="height: 50px; overflow-x: scroll; overflow-y: hidden; white-space: nowrap;">
+            ${cards}
+        </div>
+        <div style="flex: 1;">
+            ${showSelected}
+        </div>
     </div>
     <div style="height: 50vh; display: flex;">
         <div style="flex: 1; overflow: scroll;">
-            ${mapEntries(getKnownPeople, person => h`
-                <div onclick="${addPerson(person)}">
+            ${mapEntries(getAvailablePeople, person => h`
+                <div onclick="${clickPerson(person)}">
                     <img src="${() => person.image}" width="50" height="50">
                     ${() => person.first_name}
                     ${() => person.middle_name}

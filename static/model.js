@@ -2,6 +2,7 @@ import { proxy, watchFunction } from './horseless.0.5.1.min.esm.js'
 import { db } from './db.js'
 
 export const model = window.model = proxy({
+    progress: [],
     batches: {}
 })
 
@@ -18,8 +19,7 @@ export function saveActiveBatches() {
     })
 }
 
-watchFunction(async () => {
-    // console.log(JSON.stringify(model.batches[84]))
+export async function updatePeople() {
     const batchIds = Object.values(model.batches)
         .filter(batch => batch.people)
         .map(batch => batch.id)
@@ -32,5 +32,10 @@ watchFunction(async () => {
             })
         })
     }))
-    console.log('people', people.flat())
-})
+    model.progress = {}
+    people.flat().map(person => {
+        model.progress[person.id] = person
+    })
+}
+
+watchFunction(updatePeople)
