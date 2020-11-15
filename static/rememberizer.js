@@ -46,6 +46,7 @@ function getAvailablePeople () {
 }
 
 function timeToString (t) {
+  t = Math.abs(t)
   t /= 1000 // seconds
   t = Math.floor(t * 10) / 10
   if (t <= 1) return '1 second'
@@ -100,8 +101,7 @@ function getNextDue () {
     }
   })
   if (nextDue === Number.POSITIVE_INFINITY) return null
-  const t = Math.abs(Math.floor(nextDue))
-  return timeToString(t)
+  return timeToString(nextDue)
 }
 
 const clickBatch = batch => el => async e => {
