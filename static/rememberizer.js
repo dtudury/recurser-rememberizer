@@ -80,14 +80,8 @@ function timeToString (t) {
 }
 
 function getDueFor (person) {
-  console.log(person)
   if (model.progress[person.id]) {
     const streak = model.progress[person.id].streak
-    console.log(streak)
-    console.log(streak[streak.length - 1])
-    console.log(streak[0])
-    console.log((streak[streak.length - 1] - streak[0]) * RATIO + streak[0])
-    console.log((streak[streak.length - 1] - streak[0]) * RATIO + streak[0])
     return (streak[streak.length - 1] - streak[0]) * RATIO + streak[0] - Date.now()
   }
 }
