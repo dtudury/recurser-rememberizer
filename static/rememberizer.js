@@ -34,8 +34,8 @@ const RATIO = (1 + Math.sqrt(5)) / 2
 function calculateDueness (person) {
   if (model.progress[person.id]) {
     const streak = model.progress[person.id].streak
-    const d = (streak[streak.length - 1] - streak[0]) * RATIO
-    return (Date.now() - streak[0]) / d - 1
+    const t = (streak[streak.length - 1] - streak[0]) * RATIO
+    return (Date.now() - streak[0]) / t - 1
   }
   return 0
 }
@@ -45,32 +45,63 @@ function getAvailablePeople () {
   return model.people.sort((a, b) => calculateDueness(b) - calculateDueness(a))
 }
 
+function timeToString (t) {
+  t /= 1000 // seconds
+  t = Math.floor(t * 10) / 10
+  if (t <= 1) return '1 second'
+  if (t < 10) return `${t} seconds`
+  t = Math.floor(t)
+  if (t < 60) return `${t} seconds`
+  t /= 60 // minutes
+  t = Math.floor(t * 10) / 10
+  if (t <= 1) return '1 minute'
+  if (t < 10) return `${t} minutes`
+  t = Math.floor(t)
+  if (t < 60) return `${t} minutes`
+  t /= 60 // hours
+  t = Math.floor(t * 10) / 10
+  if (t <= 1) return '1 hour'
+  if (t < 10) return `${t} hours`
+  t = Math.floor(t)
+  if (t < 60) return `${t} hours`
+  t /= 24 // days
+  t = Math.floor(t * 10) / 10
+  if (t <= 1) return '1 day'
+  if (t < 10) return `${t} days`
+  t = Math.floor(t)
+  if (t < 30) return `${t} days`
+  t /= 7 // weeks
+  t = Math.floor(t * 10) / 10
+  if (t <= 1) return '1 week'
+  if (t < 10) return `${t} weeks`
+  t = Math.floor(t)
+  return `${t} weeks`
+}
+
+function getDueFor (person) {
+  console.log(person)
+  if (model.progress[person.id]) {
+    const streak = model.progress[person.id].streak
+    console.log(streak)
+    console.log(streak[streak.length - 1])
+    console.log(streak[0])
+    console.log((streak[streak.length - 1] - streak[0]) * RATIO + streak[0])
+    console.log((streak[streak.length - 1] - streak[0]) * RATIO + streak[0])
+    return (streak[streak.length - 1] - streak[0]) * RATIO + streak[0] - Date.now()
+  }
+}
+
 function getNextDue () {
   let nextDue = Number.POSITIVE_INFINITY
   model.people.forEach(person => {
     if (model.progress[person.id]) {
-      const streak = model.progress[person.id].streak
-      const due = (streak[streak.length - 1] - streak[0]) * RATIO + streak[0]
+      const due = getDueFor(person)
       nextDue = Math.min(nextDue, due)
     }
   })
   if (nextDue === Number.POSITIVE_INFINITY) return null
-  let d = Math.floor((nextDue - Date.now()) / 1000) // seconds
-  if (d < 1) return 'less than 1 second'
-  if (d === 1) return '1 second'
-  if (d < 60) return `${d} seconds`
-  d /= 60 // minutes
-  if (d < 10) return `${Math.floor(d * 10) / 10} minutes`
-  if (d < 60) return `${Math.floor(d)} minutes`
-  d /= 60 // hours
-  if (d < 10) return `${Math.floor(d * 10) / 10} hours`
-  if (d < 60) return `${Math.floor(d)} hours`
-  d /= 24 // days
-  if (d < 10) return `${Math.floor(d * 10) / 10} days`
-  if (d < 30) return `${Math.floor(d)} days`
-  d /= 7 // weeks
-  if (d < 10) return `${Math.floor(d * 10) / 10} weeks`
-  return `${Math.floor(d)} weeks`
+  const t = Math.abs(Math.floor(nextDue))
+  return timeToString(t)
 }
 
 const clickBatch = batch => el => async e => {
@@ -171,20 +202,25 @@ function selectedCard (el) {
             <img onclick=${flip} src="${model.selected.person.image}">
             <button style="width: 100px; margin-left: 1em;" onclick=${flip}>flip</button>
           </div>
-          ${showIfElse(() => !model.progress[model.selected.person.id], h`
+          ${showIfElse(() => model.progress[model.selected.person.id], h`
+            ${showIfElse(() => calculateDueness(model.selected.person) > 0, h`
+              <div style="font-style: italic; color: dimgray;">
+                This card has been due for ${() => timeToString(getDueFor(model.selected.person))}
+              </div>
+            `, h`
+              <div>
+                You know everyone!
+              </div>
+              <div style="font-style: italic; color: dimgray;">
+                This card isn't due for ${() => timeToString(getDueFor(model.selected.person))}
+              </div>
+            `)}
+          `, h`
             <div>
               New person!
             </div>
             <div style="font-style: italic; color: dimgray;">
-              The next known card isn't due for ${getNextDue}
-            </div>
-          `)}
-          ${showIfElse(() => calculateDueness(model.selected.person) < 0, h`
-            <div>
-              You know everyone!
-            </div>
-            <div style="font-style: italic; color: dimgray;">
-              This card isn't due for ${getNextDue}
+              The next card is due in ${() => getNextDue}
             </div>
           `)}
         `
