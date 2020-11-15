@@ -33,5 +33,21 @@ export async function getPeople (id) {
       model.batches[id].people[person.id] = person
     }
   })
+  rebuildPeopleList()
   model.batches[id].isLoading = false
+}
+
+function rebuildPeopleList () {
+  model.people = []
+  Object.values(model.batches).forEach(batch => {
+    if (batch.people) {
+      Object.values(batch.people).forEach(person => {
+        if (model.people.indexOf(person) === -1) {
+          const i = Math.floor(Math.random() * (model.people.length + 1))
+          model.people.splice(i, 0, person)
+          // people.push(person)
+        }
+      })
+    }
+  })
 }

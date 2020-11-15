@@ -34,25 +34,43 @@ const RATIO = (1 + Math.sqrt(5)) / 2
 function calculateDueness (person) {
   if (model.progress[person.id]) {
     const streak = model.progress[person.id].streak
-    const d = Math.max((streak[streak.length - 1] - streak[0]) * RATIO, 10 * 1000)
+    const d = (streak[streak.length - 1] - streak[0]) * RATIO
     return (Date.now() - streak[0]) / d - 1
   }
   return 0
 }
 
 function getAvailablePeople () {
-  let people = []
-  getSortedBatches().forEach(batch => {
-    if (batch.people) {
-      Object.values(batch.people).forEach(person => {
-        if (people.indexOf(person) === -1) {
-          people.push(person)
-        }
-      })
+  if (!model.people) return []
+  return model.people.sort((a, b) => calculateDueness(b) - calculateDueness(a))
+}
+
+function getNextDue () {
+  let nextDue = Number.POSITIVE_INFINITY
+  model.people.forEach(person => {
+    if (model.progress[person.id]) {
+      const streak = model.progress[person.id].streak
+      const due = (streak[streak.length - 1] - streak[0]) * RATIO + streak[0]
+      nextDue = Math.min(nextDue, due)
     }
   })
-  people = people.sort((a, b) => calculateDueness(b) - calculateDueness(a))
-  return people
+  if (nextDue === Number.POSITIVE_INFINITY) return null
+  let d = Math.floor((nextDue - Date.now()) / 1000) // seconds
+  if (d < 1) return 'less than 1 second'
+  if (d === 1) return '1 second'
+  if (d < 60) return `${d} seconds`
+  d /= 60 // minutes
+  if (d < 10) return `${Math.floor(d * 10) / 10} minutes`
+  if (d < 60) return `${Math.floor(d)} minutes`
+  d /= 60 // hours
+  if (d < 10) return `${Math.floor(d * 10) / 10} hours`
+  if (d < 60) return `${Math.floor(d)} hours`
+  d /= 24 // days
+  if (d < 10) return `${Math.floor(d * 10) / 10} days`
+  if (d < 30) return `${Math.floor(d)} days`
+  d /= 7 // weeks
+  if (d < 10) return `${Math.floor(d * 10) / 10} weeks`
+  return `${Math.floor(d)} weeks`
 }
 
 const clickBatch = batch => el => async e => {
@@ -78,12 +96,12 @@ function next () {
 }
 
 const right = el => e => {
-  setProgress(model.selected.person, false)
+  setProgress(model.selected.person, false, 60 * 1000 / RATIO)
   next()
 }
 
 const wrong = el => e => {
-  setProgress(model.selected.person, true)
+  setProgress(model.selected.person, true, 5 * 1000 / RATIO)
   next()
 }
 
@@ -157,12 +175,16 @@ function selectedCard (el) {
             <div>
               New person!
             </div>
+            <div style="font-style: italic; color: dimgray;">
+              The next known card isn't due for ${getNextDue}
+            </div>
           `)}
           ${showIfElse(() => calculateDueness(model.selected.person) < 0, h`
             <div>
               You know everyone!
-              <br>
-              (take a break?)
+            </div>
+            <div style="font-style: italic; color: dimgray;">
+              This card isn't due for ${getNextDue}
             </div>
           `)}
         `
