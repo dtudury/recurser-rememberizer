@@ -214,7 +214,7 @@ function selectedCard (el) {
               New person!
             </div>
             <div style="font-style: italic; color: dimgray;">
-              The next card is due in ${() => getNextDue}
+              The next card is due in ${getNextDue}
             </div>
           `)}
         `

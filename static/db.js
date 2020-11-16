@@ -1,5 +1,5 @@
 import { model, saveActiveBatches, updateProgress } from './model.js'
-import { getMe, getList, getPeople } from './apiActions.js'
+import { getMe, getList, getPeople, deletePeople } from './apiActions.js'
 
 export const db = new Promise((resolve, reject) => {
   Object.assign(window.indexedDB.open('rememberizer'), {
@@ -47,7 +47,7 @@ export async function setProgress (person, reset, snooze) {
 
 export async function toggleBatch (batch) {
   if (model.batches[batch.id].isLoading) return
-  if (model.batches[batch.id].people) delete model.batches[batch.id].people
+  if (model.batches[batch.id].people) deletePeople(batch.id)
   else getPeople(batch.id)
 }
 

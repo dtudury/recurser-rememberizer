@@ -37,11 +37,22 @@ export async function getPeople (id) {
   model.batches[id].isLoading = false
 }
 
+export async function deletePeople (id) {
+  delete model.batches[id].people
+  delete model.batches[id].isLoading
+  rebuildPeopleList()
+}
+
 function rebuildPeopleList () {
   model.people = []
+  const selectedId = model.selected?.person?.id
+  let selectedPersonPresent = false
   Object.values(model.batches).forEach(batch => {
     if (batch.people) {
       Object.values(batch.people).forEach(person => {
+        if (person.id === selectedId) {
+          selectedPersonPresent = true
+        }
         if (model.people.indexOf(person) === -1) {
           const i = Math.floor(Math.random() * (model.people.length + 1))
           model.people.splice(i, 0, person)
@@ -50,4 +61,7 @@ function rebuildPeopleList () {
       })
     }
   })
+  if (!selectedPersonPresent) {
+    // delete model.selected
+  }
 }
