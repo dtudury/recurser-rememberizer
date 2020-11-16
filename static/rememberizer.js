@@ -121,17 +121,17 @@ function next () {
 }
 
 const right = el => e => {
-  setProgress(model.selected.person, false, 60 * 1000 / RATIO)
+  setProgress(model.selected.person, false, 60 * 1000 * RATIO)
   next()
 }
 
 const wrong = el => e => {
-  setProgress(model.selected.person, true, 5 * 1000 / RATIO)
+  setProgress(model.selected.person, true, 5 * 1000 * RATIO)
   next()
 }
 
 const snooze = duration => el => e => {
-  setProgress(model.selected.person, false, duration / RATIO)
+  setProgress(model.selected.person, false, duration * RATIO)
   next()
 }
 
@@ -228,11 +228,6 @@ const cards = mapEntries(getAvailablePeople, person => {
   return h`<img onclick=${selectPerson(person)} src="${() => person.image}" width="50" height="50">`
 })
 
-render(document.body, h`
-Sorry, under construction (November 16) please try again later today
-`)
-
-/*
 init()
 render(document.body, h`
   <div style="display: flex; height: 100vh; width: 100vw;">
@@ -256,4 +251,3 @@ render(document.body, h`
     </div>
   </div>
 `)
-*/
