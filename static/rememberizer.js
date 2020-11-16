@@ -228,6 +228,11 @@ const cards = mapEntries(getAvailablePeople, person => {
   return h`<img onclick=${selectPerson(person)} src="${() => person.image}" width="50" height="50">`
 })
 
+render(document.body, h`
+Sorry, under construction (November 16) please try again later today
+`)
+
+/*
 init()
 render(document.body, h`
   <div style="display: flex; height: 100vh; width: 100vw;">
@@ -251,3 +256,4 @@ render(document.body, h`
     </div>
   </div>
 `)
+*/
