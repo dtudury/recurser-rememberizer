@@ -62,6 +62,6 @@ function rebuildPeopleList () {
     }
   })
   if (!selectedPersonPresent) {
-    // delete model.selected
+    model.selected = null
   }
 }
